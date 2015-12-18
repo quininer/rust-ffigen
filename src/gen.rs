@@ -51,19 +51,69 @@ pub fn ast_dump(entity: &Entity, depth: usize) -> Vec<u8> {
     match entity.get_kind() {
         EntityKind::StructDecl => {
             // FIXME name missing
-            result.append(&mut format!("(StructDecl {}", entity.get_display_name().unwrap_or("???".into())).into_bytes());
+            result.append(&mut format!(
+                "(StructDecl {}",
+                entity.get_name().unwrap_or("???".into())
+            ).into_bytes());
+
             result.push(b'\n');
             dump_continue!(depth + 1);
             dump_tab!(depth);
             result.push(b')');
             result.push(b'\n');
         },
-        // EntityKind::EnumDecl => {},
-        // EntityKind::EnumConstantDecl => {},
+        EntityKind::EnumDecl => {
+            result.append(&mut format!(
+                "(EnumDecl {}",
+                entity.get_name().unwrap_or("???".into())
+            ).into_bytes());
+
+            result.push(b'\n');
+            dump_continue!(depth + 1);
+            dump_tab!(depth);
+            result.push(b')');
+            result.push(b'\n');
+        },
+        EntityKind::EnumConstantDecl => {
+            result.append(&mut format!(
+                "(EnumConstantDecl {}: {})",
+                entity.get_name().unwrap_or("???".into()),
+                entity.get_type().map_or(String::from("???"), |r| r.get_display_name())
+            ).into_bytes());
+
+            result.push(b'\n');
+        },
+        EntityKind::FunctionDecl => {
+            result.append(&mut format!(
+                "(FunctionDecl {} -> {}",
+                entity.get_name().unwrap_or("???".into()),
+                entity.get_type().map_or(
+                    String::from("None"),
+                    |r| r.get_result_type().map_or(
+                        String::from("None"),
+                        |x| x.get_display_name()
+                    )
+                )
+            ).into());
+
+            result.push(b'\n');
+            dump_continue!(depth + 1);
+            dump_tab!(depth);
+            result.push(b')');
+            result.push(b'\n');
+        },
+        EntityKind::ParmDecl => {
+            result.append(&mut format!(
+                "(ParmDecl {}: {})",
+                entity.get_name().unwrap_or("???".into()),
+                entity.get_type().map_or(String::from("???"), |r| r.get_display_name())
+            ).into());
+
+            result.push(b'\n');
+        },
         // EntityKind::TypedefDecl => {},
-        // EntityKind::FunctionDecl => {},
-        // EntityKind::ParmDecl => {},
         // EntityKind::TypeRef => {},
+        // EntityKind::FieldDecl => {},
         _ => {
             result.append(&mut entity.get_name().unwrap_or(String::from("None")).into_bytes());
             result.push(b'\n');
