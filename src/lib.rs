@@ -1,17 +1,32 @@
 extern crate clang;
 
-use clang::{ Clang, Index, TranslationUnit, ParseOptions, Entity };
+pub mod gen;
 
+use clang::ParseOptions;
+use gen::*;
+
+
+#[derive(Debug, Clone)]
+pub enum OutType {
+    Ast, // Debug
+    Rust
+}
+
+#[derive(Debug, Clone)]
 pub struct GenOptions<'g> {
     pub args: Vec<&'g str>,
     pub link: Option<&'g str>,
+    pub parse: ParseOptions,
+    pub outtype: OutType,
 }
 
 impl<'g> GenOptions<'g> {
     pub fn new() -> GenOptions<'g> {
         GenOptions {
             args: Vec::new(),
-            link: None
+            link: None,
+            parse: ParseOptions::default(),
+            outtype: OutType::Ast
         }
     }
 
@@ -23,33 +38,15 @@ impl<'g> GenOptions<'g> {
         self.link = Some(l);
         self
     }
-
-    pub fn dump(&self) {
-        let c = Clang::new().unwrap();
-        let mut i = Index::new(&c, true, false);
-        let t = TranslationUnit::from_source(
-            &mut i,
-            self.link.unwrap(),
-            &self.args[..],
-            &[],
-            ParseOptions::default()
-        ).unwrap();
-
-        let entity = t.get_entity();
-
-        dump(&entity, 0);
-    }
-}
-
-fn dump(entity: &Entity, depth: usize) {
-    let mut i = 0;
-    while i < depth {
-        i += 1;
-        print!("    ");
+    pub fn out(mut self, t: OutType) -> GenOptions<'g> {
+        self.outtype = t;
+        self
     }
 
-    println!("{:?}", entity.get_name());
-    for e in entity.get_children() {
-        dump(&e, depth + 1);
+    pub fn gen(self) -> Vec<u8> {
+        generate(self.clone(), match self.outtype {
+            OutType::Ast => ast_dump,
+            OutType::Rust => rust_dump
+        })
     }
 }
