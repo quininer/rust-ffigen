@@ -1,9 +1,11 @@
 extern crate clang;
 
-pub mod gen;
+#[macro_use] pub mod gen;
+mod ast;
 
-use clang::ParseOptions;
-use gen::*;
+use clang::{ Clang, Index, ParseOptions, TranslationUnit };
+use gen::UnnamedMap;
+use ast::ast_dump;
 
 
 #[derive(Debug, Clone)]
@@ -44,9 +46,20 @@ impl<'g> GenOptions<'g> {
     }
 
     pub fn gen(self) -> Vec<u8> {
-        generate(self.clone(), match self.outtype {
+        let c = Clang::new().unwrap();
+        let mut i = Index::new(&c, true, false);
+        let t = TranslationUnit::from_source(
+            &mut i,
+            self.link.unwrap(),
+            &self.args[..],
+            &[],
+            self.parse
+        ).unwrap();
+        let entity = t.get_entity();
+
+        (match self.outtype {
             OutType::Ast => ast_dump,
-            OutType::Rust => rust_dump
-        })
+            OutType::Rust => panic!("TODO")
+        })(&entity, 0, &mut UnnamedMap::new()).into_bytes()
     }
 }
