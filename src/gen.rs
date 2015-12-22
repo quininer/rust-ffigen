@@ -30,7 +30,3 @@ macro_rules! dump_name {
 }
 
 pub type UnnamedMap<'tu> = HashMap<Entity<'tu>, String>;
-
-pub fn rust_dump() -> String {
-    unimplemented!()
-}

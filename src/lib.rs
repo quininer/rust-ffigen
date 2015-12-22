@@ -1,25 +1,20 @@
 extern crate clang;
 
 #[macro_use] pub mod gen;
-mod ast;
+mod types;
+mod rust;
 
 use clang::{ Clang, Index, ParseOptions, TranslationUnit };
 use gen::UnnamedMap;
-use ast::ast_dump;
+use rust::rust_dump;
 
-
-#[derive(Debug, Clone)]
-pub enum OutType {
-    Ast, // Debug
-    Rust
-}
 
 #[derive(Debug, Clone)]
 pub struct GenOptions<'g> {
     pub args: Vec<&'g str>,
     pub link: Option<&'g str>,
-    pub parse: ParseOptions,
-    pub outtype: OutType,
+    pub matchpat: String,
+    pub parse: ParseOptions
 }
 
 impl<'g> GenOptions<'g> {
@@ -27,8 +22,8 @@ impl<'g> GenOptions<'g> {
         GenOptions {
             args: Vec::new(),
             link: None,
+            matchpat: String::new(),
             parse: ParseOptions::default(),
-            outtype: OutType::Ast
         }
     }
 
@@ -40,8 +35,8 @@ impl<'g> GenOptions<'g> {
         self.link = Some(l);
         self
     }
-    pub fn out(mut self, t: OutType) -> GenOptions<'g> {
-        self.outtype = t;
+    pub fn pat(mut self, m: &'g str) -> GenOptions<'g> {
+        self.matchpat = m.into();
         self
     }
 
@@ -57,9 +52,6 @@ impl<'g> GenOptions<'g> {
         ).unwrap();
         let entity = t.get_entity();
 
-        (match self.outtype {
-            OutType::Ast => ast_dump,
-            OutType::Rust => panic!("TODO")
-        })(&entity, 0, &mut UnnamedMap::new()).into_bytes()
+        rust_dump(&entity, 0, &mut UnnamedMap::new(), self.matchpat).into_bytes()
     }
 }
