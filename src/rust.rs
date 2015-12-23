@@ -136,16 +136,26 @@ pub fn dump<'tu>(
                 dump_name!(unmap, entity.clone())
             ));
             dump_continue!(
-                e of entity,
+                e in entity.get_children().iter()
+                    .filter(|r| r.get_kind() == EntityKind::ParmDecl),
                 out <- dump(&e, depth + 1, &mut unmap, pat)
             );
             dump_tab!(out, depth);
-            match entity.get_type()
-                .and_then(|r| r.get_result_type())
-                .map(|r| typeconv(r.get_kind()))
+            match entity.get_children().iter()
+                .filter(|r| r.get_kind() == EntityKind::TypeRef)
+                .next()
+                .and_then(|r| r.get_name())
             {
-                Some(name) => out.push_str(&format!(") -> {};\n", name)),
-                _ => out.push_str(");\n")
+                Some(name) => out.push_str(&format!(
+                    ") -> {}{}\n",
+                    dump_const!(
+                        entity.get_type()
+                            .and_then(|r| r.get_result_type())
+                            .expect("WTF: result type is None")
+                    ),
+                    name
+                )),
+                None => out.push_str(");\n")
             };
         },
         EntityKind::ParmDecl => {
@@ -188,7 +198,7 @@ pub fn dump<'tu>(
         },
         _ => {
             out.push_str(&format!(
-                "{}: {:?}\n",
+                "(Unknown {}: {:?})\n",
                 dump_name!(unmap, entity.clone()),
                 entity.get_kind()
             ));
