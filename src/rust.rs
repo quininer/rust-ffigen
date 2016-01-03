@@ -22,72 +22,65 @@ pub fn dump<'tu>(
     pat: &str
 ) -> String {
     let mut out = String::new();
-
-    if entity.get_kind() != EntityKind::TranslationUnit &&
-        entity.get_location().map_or(true, |r| !r.is_in_main_file())
-    {
-        return out;
-    };
-
-    dump_tab!(out, depth);
+    out.push_str(&format!("{}", dump_tab!(depth)));
 
     match entity.get_kind() {
         EntityKind::TranslationUnit => {
+            let mut t = Vec::new();
+            let mut s = Vec::new();
+            let mut f = Vec::new();
+
             for e in entity.get_children().iter()
-                .filter(|r| r.get_kind() == EntityKind::TypedefDecl)
+                .filter(|&r| r.get_location().map_or(false, |r| r.is_in_main_file()))
             {
-                let sube = e.get_children();
-                if sube.len() == 1 && match sube[0].get_kind() {
+                match e.get_kind() {
+                    EntityKind::TypedefDecl => t.push(e.clone()),
+                    EntityKind::FunctionDecl => f.push(e.clone()),
+                    _ => s.push(e.clone())
+                };
+            };
+
+            for e in t {
+                let se = e.get_children();
+                if se.len() == 1 && match se[0].get_kind() {
                     EntityKind::StructDecl => true,
                     EntityKind::TypeRef => true,
                     EntityKind::EnumDecl => true,
                     _ => false
                 } {
                     let name = dump_name!(unmap, e.clone());
-                    unmap.insert(sube[0], name);
+                    unmap.insert(se[0], name);
                 } else {
                     out.push_str(&dump(&e, depth, &mut unmap, pat));
                 };
-            }
-            dump_continue!(
-                e in entity.get_children().iter()
-                    .filter(|r| match r.get_kind() {
-                        EntityKind::TypedefDecl => false,
-                        EntityKind::FunctionDecl => false,
-                        _ => true
-                    }),
-                out <- dump(&e, depth, &mut unmap, pat)
-            );
-            out.push_str(&format!(
-                "#[link(name=\"{}\")]\nextern \"C\" {{\n",
-                pat
+            };
+
+            out.push_str(&format!("{}", dump_continue!(
+                e in s,
+                dump(&e, depth, &mut unmap, pat))
             ));
-            dump_continue!(
-                e in entity.get_children().iter()
-                    .filter(|r| r.get_kind() == EntityKind::FunctionDecl),
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
-            out.push_str("}\n");
+
+            out.push_str(&format!(
+                "#[link(name=\"{}\")]\nextern \"C\" {{\n{}\n}}",
+                pat,
+                dump_continue!(e in f, dump(&e, depth + 1, &mut unmap, pat))
+            ));
         },
         EntityKind::StructDecl => {
             let se = entity.get_children();
             if se.len() == 0 {
                 out.push_str(&format!(
-                    "pub enum {} {{",
+                    "pub enum {} {{}}\n",
                     dump_name!(unmap, entity.clone())
                 ))
             } else {
                 out.push_str(&format!(
-                    "pub struct {} {{\n",
-                    dump_name!(unmap, entity.clone())
+                    "pub struct {} {{\n{}\n{}}}\n",
+                    dump_name!(unmap, entity.clone()),
+                    dump_continue!(e in se, dump(&e, depth + 1, &mut unmap, pat)),
+                    dump_tab!(depth)
                 ));
-                dump_continue!(
-                    e in se,
-                    out <- dump(&e, depth + 1, &mut unmap, pat)
-                );
-                dump_tab!(out, depth);
             }
-            out.push_str("}\n");
         },
         EntityKind::FieldDecl => {
             out.push_str(&format!(
@@ -99,25 +92,29 @@ pub fn dump<'tu>(
                 {
                     format!(
                         "[{}; {}]",
-                        dump_name!(unmap, entity.get_children()[0]),
+                        format!(
+                            "{}{}",
+                            dump_const!(entity.get_type().unwrap()),
+                            dump_type!(unmap, entity)
+                        ),
                         entity.get_type().and_then(|r| r.get_size()).unwrap_or(0)
                     )
                 } else {
-                    dump(&entity, depth + 1, &mut unmap, pat)
+                    format!(
+                        "{}{}",
+                        dump_const!(entity.get_type().unwrap()),
+                        dump_type!(unmap, entity)
+                    )
                 }
             ));
         },
         EntityKind::EnumDecl => {
             out.push_str(&format!(
-                "pub enum {} {{\n",
-                dump_name!(unmap, entity.clone())
-            ));
-            dump_continue!(
-                e of entity,
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
-            dump_tab!(out, depth);
-            out.push_str("}\n");
+                "pub enum {} {{\n{}\n{}}}\n",
+                dump_name!(unmap, entity.clone()),
+                dump_continue!(e of entity, dump(&e, depth + 1, &mut unmap, pat)),
+                dump_tab!(depth)
+            ));;
         },
         EntityKind::EnumConstantDecl => {
             out.push_str(&format!(
@@ -132,81 +129,58 @@ pub fn dump<'tu>(
         },
         EntityKind::FunctionDecl => {
             out.push_str(&format!(
-                "pub fn {}(\n",
-                dump_name!(unmap, entity.clone())
+                "pub fn {}(\n{}\n{})",
+                dump_name!(unmap, entity.clone()),
+                dump_continue!(
+                    e in entity.get_children().iter()
+                        .filter(|r| r.get_kind() == EntityKind::ParmDecl),
+                    dump(&e, depth + 1, &mut unmap, pat)
+                ),
+                dump_tab!(depth)
             ));
-            dump_continue!(
-                e in entity.get_children().iter()
-                    .filter(|r| r.get_kind() == EntityKind::ParmDecl),
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
-            dump_tab!(out, depth);
-            match entity.get_children().iter()
-                .filter(|r| r.get_kind() == EntityKind::TypeRef)
-                .next()
-                .and_then(|r| r.get_name())
-            {
-                Some(name) => out.push_str(&format!(
-                    ") -> {}{}\n",
-                    dump_const!(
-                        entity.get_type()
-                            .and_then(|r| r.get_result_type())
-                            .expect("WTF: result type is None")
-                    ),
-                    name
+            match entity.get_type().and_then(|r| r.get_result_type()) {
+                Some(ty) => out.push_str(&format!(
+                    " -> {}{};\n",
+                    dump_const!(ty),
+                    match entity.get_children().iter()
+                        .filter(|r| r.get_kind() == EntityKind::TypeRef)
+                        .next()
+                    {
+                        Some(se) => dump_name!(unmap, se.clone()),
+                        None => typeconv(ty.get_kind())
+                    }
                 )),
-                None => out.push_str(");\n")
-            };
+                None => out.push_str(";\n")
+            }
         },
         EntityKind::ParmDecl => {
             // FIXME callback function
             out.push_str(&format!(
-                "(ParmDecl {}: {:?} {:?}\n",
+                "{}: {},\n",
                 dump_name!(unmap, entity.clone()),
-                entity
-                    .get_type()
-                    .and_then(|r| r.get_pointee_type())
-                    .map_or(TypeKind::Unexposed, |r| r.get_kind()),
-                entity
-                    .get_type()
-                    .map_or(TypeKind::Unexposed, |r| r.get_kind())
-            ));
-            dump_continue!(
-                e of entity,
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
-            dump_tab!(out, depth);
-            out.push_str(")\n");
-        },
-        EntityKind::TypeRef => {
-            out.push_str(&format!(
-                "(TypeRef {})\n",
-                dump_name!(unmap, entity.clone())
+                format!(
+                    "{}{:?}",
+                    entity.get_type().map_or("", |r| dump_const!(r)),
+                    entity.get_type() // TODO get name or type or fn
+                )
             ));
         },
         EntityKind::TypedefDecl => {
+            // TODO alias or fn
             out.push_str(&format!(
-                "(TypedefDecl {}\n",
-                dump_name!(unmap, entity.clone())
+                "(TypedefDecl {}\n{}\n{})\n",
+                dump_name!(unmap, entity.clone()),
+                dump_continue!(e of entity, dump(&e, depth + 1, &mut unmap, pat)),
+                dump_tab!(depth)
             ));
-            dump_continue!(
-                e of entity,
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
-            dump_tab!(out, depth);
-            out.push_str(")\n");
         },
         _ => {
             out.push_str(&format!(
-                "(Unknown {}: {:?})\n",
+                "(Unknown {}: {:?})\n{}",
                 dump_name!(unmap, entity.clone()),
-                entity.get_kind()
+                entity.get_kind(),
+                dump_continue!(e of entity, dump(&e, depth + 1, &mut unmap, pat))
             ));
-
-            dump_continue!(
-                e of entity,
-                out <- dump(&e, depth + 1, &mut unmap, pat)
-            );
         }
     };
 

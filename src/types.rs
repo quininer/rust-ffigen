@@ -23,8 +23,8 @@ pub fn typeconv(ty: TypeKind) -> String {
         TypeKind::ULongLong => "c_ulonglong",
         TypeKind::Float => "c_float",
         TypeKind::Double => "c_double",
-        TypeKind::Nullptr => "None",
-        TypeKind::LongDouble | TypeKind::Int128 | TypeKind::UInt128 | _ => "Unknown"
+        TypeKind::LongDouble => panic!("hmm.."),
+        TypeKind::Int128 | TypeKind::UInt128 | _ => panic!("Unknown type.")
     };
     r.into()
 }

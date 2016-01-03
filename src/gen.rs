@@ -5,17 +5,21 @@ use clang::Entity;
 
 
 macro_rules! dump_tab {
-    ( $out:ident, $tab:expr ) => {
-        for _ in 0..$tab { $out.push('\t'); }
-    }
+    ( $tab:expr ) => {{
+        let mut out = String::new();
+        for _ in 0..$tab { out.push('\t'); };
+        out
+    }}
 }
 
 macro_rules! dump_continue {
-    ( $sub:ident in $entitys:expr, $out:ident <- $exec:expr ) => {
-        for $sub in $entitys { $out.push_str(&$exec) };
-    };
-    ( $sub:ident of $entity:expr, $out:ident <- $exec:expr ) => {
-        dump_continue!( $sub in $entity.get_children(), $out <- $exec )
+    ( $sub:ident in $entitys:expr, $exec:expr ) => {{
+        let mut out = String::new();
+        for $sub in $entitys { out.push_str(&$exec) };
+        out
+    }};
+    ( $sub:ident of $entity:expr, $exec:expr ) => {
+        dump_continue!( $sub in $entity.get_children(), $exec )
     }
 }
 
@@ -37,6 +41,34 @@ macro_rules! dump_const {
             .get_pointee_type()
             .map(|r| if r.is_const_qualified() { "*const " } else { "*mut " })
             .unwrap_or("")
+    }
+}
+
+macro_rules! dump_type {
+    ( $unmap:expr, $entity:expr ) => {
+        match $entity.get_children().iter()
+            .filter(|r| r.get_kind() == EntityKind::TypeRef)
+            .next()
+        {
+            Some(se) => dump_name!($unmap, se.clone()),
+            None => if $entity.get_type().map_or(false, |r| r.get_kind() == TypeKind::Pointer) {
+                $entity.get_type()
+                    .and_then(|r| r.get_pointee_type())
+                    .map(|r| r.get_kind()) // TODO fn
+                    .map(
+                        |r| if r == TypeKind::Unexposed {
+                            format!(r#"extern "C" fn({}){}"#, "", "")
+                        } else { typeconv(r) }
+                    )
+                    .unwrap()
+            } else {
+                typeconv(
+                    $entity.get_type()
+                        .map(|r| r.get_kind())
+                        .unwrap()
+                )
+            }
+        }
     }
 }
 
