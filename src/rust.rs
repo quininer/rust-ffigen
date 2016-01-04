@@ -95,7 +95,10 @@ pub fn dump<'tu>(
                         format!(
                             "{}{}",
                             dump_const!(entity.get_type().unwrap()),
-                            dump_type!(unmap, entity)
+                            dump_type!(unmap, depth, entity, dump_continue!(
+                                e of entity,
+                                dump(&e, depth + 1, &mut unmap, pat)
+                            ))
                         ),
                         entity.get_type().and_then(|r| r.get_size()).unwrap_or(0)
                     )
@@ -103,7 +106,10 @@ pub fn dump<'tu>(
                     format!(
                         "{}{}",
                         dump_const!(entity.get_type().unwrap()),
-                        dump_type!(unmap, entity)
+                        dump_type!(unmap, depth, entity, dump_continue!(
+                            e of entity,
+                            dump(&e, depth + 1, &mut unmap, pat)
+                        ))
                     )
                 }
             ));
@@ -129,39 +135,28 @@ pub fn dump<'tu>(
         },
         EntityKind::FunctionDecl => {
             out.push_str(&format!(
-                "pub fn {}(\n{}\n{})",
+                "pub fn {}(\n{}{}){};\n",
                 dump_name!(unmap, entity.clone()),
                 dump_continue!(
                     e in entity.get_children().iter()
                         .filter(|r| r.get_kind() == EntityKind::ParmDecl),
                     dump(&e, depth + 1, &mut unmap, pat)
                 ),
-                dump_tab!(depth)
+                dump_tab!(depth),
+                dump_res!(unmap, entity)
             ));
-            match entity.get_type().and_then(|r| r.get_result_type()) {
-                Some(ty) => out.push_str(&format!(
-                    " -> {}{};\n",
-                    dump_const!(ty),
-                    match entity.get_children().iter()
-                        .filter(|r| r.get_kind() == EntityKind::TypeRef)
-                        .next()
-                    {
-                        Some(se) => dump_name!(unmap, se.clone()),
-                        None => typeconv(ty.get_kind())
-                    }
-                )),
-                None => out.push_str(";\n")
-            }
         },
         EntityKind::ParmDecl => {
-            // FIXME callback function
             out.push_str(&format!(
                 "{}: {},\n",
                 dump_name!(unmap, entity.clone()),
                 format!(
-                    "{}{:?}",
+                    "{}{}",
                     entity.get_type().map_or("", |r| dump_const!(r)),
-                    entity.get_type() // TODO get name or type or fn
+                    dump_type!(unmap, depth, entity, dump_continue!(
+                        e of entity,
+                        dump(&e, depth + 1, &mut unmap, pat)
+                    ))
                 )
             ));
         },

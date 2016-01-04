@@ -44,8 +44,27 @@ macro_rules! dump_const {
     }
 }
 
-macro_rules! dump_type {
+macro_rules! dump_res {
     ( $unmap:expr, $entity:expr ) => {
+        match $entity.get_type().and_then(|r| r.get_result_type()) {
+            Some(ty) => format!(
+                " -> {}{}",
+                dump_const!(ty),
+                match $entity.get_children().iter()
+                    .filter(|r| r.get_kind() == EntityKind::TypeRef)
+                    .next()
+                {
+                    Some(se) => dump_name!($unmap, se.clone()),
+                    None => typeconv(ty.get_kind())
+                }
+            ),
+            None => String::from("")
+        }
+    }
+}
+
+macro_rules! dump_type {
+    ( $unmap:expr, $depth:expr, $entity:expr, $parm:expr ) => {
         match $entity.get_children().iter()
             .filter(|r| r.get_kind() == EntityKind::TypeRef)
             .next()
@@ -54,10 +73,16 @@ macro_rules! dump_type {
             None => if $entity.get_type().map_or(false, |r| r.get_kind() == TypeKind::Pointer) {
                 $entity.get_type()
                     .and_then(|r| r.get_pointee_type())
-                    .map(|r| r.get_kind()) // TODO fn
+                    .map(|r| r.get_kind())
                     .map(
                         |r| if r == TypeKind::Unexposed {
-                            format!(r#"extern "C" fn({}){}"#, "", "")
+                            format!(
+                                r#"extern "C" fn({}{}{}){}"#,
+                                "\n",
+                                $parm,
+                                dump_tab!($depth),
+                                dump_res!($unmap, $entity)
+                            )
                         } else { typeconv(r) }
                     )
                     .unwrap()
