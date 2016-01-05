@@ -1,7 +1,5 @@
-extern crate clang;
-
 use clang::{ Entity, EntityKind, TypeKind };
-use super::gen::UnnamedMap;
+use super::gen::{ UnnamedMap, trim };
 use super::types::typeconv;
 
 
@@ -11,7 +9,16 @@ pub fn rust_dump<'tu>(
     mut unmap: &mut UnnamedMap<'tu>,
     pat: String
 ) -> String {
-    dump(&entity, depth, &mut unmap, &pat)
+    format!("//! ffigen generate.
+#![allow(non_camel_case_types)]
+#![allow(dead_code)]
+#![allow(unused_attributes)]
+#![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
+
+use libc::*;
+
+{}", dump(&entity, depth, &mut unmap, &pat))
 }
 
 
@@ -70,12 +77,13 @@ pub fn dump<'tu>(
             let se = entity.get_children();
             if se.len() == 0 {
                 out.push_str(&format!(
-                    "pub enum {} {{}}\n",
+                    "pub enum {} {{}}\n\n",
                     dump_name!(unmap, entity.clone())
                 ))
             } else {
+                out.push_str("#[repr(C)]\n#[derive(Copy, Clone, Debug)]\n");
                 out.push_str(&format!(
-                    "pub struct {} {{\n{}\n{}}}\n",
+                    "pub struct {} {{\n{}\n{}}}\n\n",
                     dump_name!(unmap, entity.clone()),
                     dump_continue!(e in se, dump(&e, depth + 1, &mut unmap, pat)),
                     dump_tab!(depth)
@@ -84,7 +92,7 @@ pub fn dump<'tu>(
         },
         EntityKind::FieldDecl => {
             out.push_str(&format!(
-                "{}: {}\n",
+                "pub {}: {},\n",
                 dump_name!(unmap, entity.clone()),
                 if entity.get_type()
                     .map(|r| r.get_kind())
@@ -115,8 +123,9 @@ pub fn dump<'tu>(
             ));
         },
         EntityKind::EnumDecl => {
+            out.push_str("#[repr(C)]\n#[derive(Copy, Clone, Debug)]\n");
             out.push_str(&format!(
-                "pub enum {} {{\n{}\n{}}}\n",
+                "pub enum {} {{\n{}\n{}}}\n\n",
                 dump_name!(unmap, entity.clone()),
                 dump_continue!(e of entity, dump(&e, depth + 1, &mut unmap, pat)),
                 dump_tab!(depth)
@@ -124,9 +133,8 @@ pub fn dump<'tu>(
         },
         EntityKind::EnumConstantDecl => {
             out.push_str(&format!(
-                "{}: {}{},\n",
+                "{}{},\n",
                 dump_name!(unmap, entity.clone()),
-                typeconv(entity.get_type().map_or(TypeKind::Int, |r| r.get_kind())),
                 match entity.get_enum_constant_value().map(|(r, _)| r) {
                     Some(r) => format!(" = {}", r),
                     _ => "".into()

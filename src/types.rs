@@ -1,5 +1,3 @@
-extern crate clang;
-
 use clang::TypeKind;
 
 pub fn typeconv(ty: TypeKind) -> String {

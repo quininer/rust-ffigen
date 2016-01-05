@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["quininer <quininer@live.com>"]
 
 [dependencies]
+lazy_static = "0.1.*"
 
 [dependencies.clang]
 git = "https://github.com/KyleMayes/clang-rs.git"

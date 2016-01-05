@@ -1,6 +1,4 @@
-extern crate clang;
-
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 use clang::Entity;
 
 
@@ -26,7 +24,7 @@ macro_rules! dump_continue {
 macro_rules! dump_name {
     ( $unmap:expr, $entity:expr ) => {{
         match $entity.get_name() {
-            Some(name) => name,
+            Some(name) => trim(name),
             None => {
                 let name = format!("Unnamed{}", $unmap.len());
                 $unmap.entry($entity).or_insert(name.into()).clone()
@@ -101,4 +99,39 @@ macro_rules! dump_type {
     }
 }
 
+macro_rules! set {
+    ( $( $e:expr ),* ) => {{
+        let mut tmp_set = KeywordSet::new();
+        $(
+            tmp_set.insert(String::from($e));
+        )*
+        tmp_set
+    }}
+}
+
 pub type UnnamedMap<'tu> = HashMap<Entity<'tu>, String>;
+pub type KeywordSet = HashSet<String>;
+lazy_static!{
+    static ref KWSET: KeywordSet = set![
+        "abstract", "alignof", "as", "become", "box",
+        "break", "const", "continue", "crate", "do",
+        "else", "enum", "extern", "false", "final",
+        "fn", "for", "if", "impl", "in",
+        "let", "loop", "macro", "match", "mod",
+        "move", "mut", "offsetof", "override", "priv",
+        "proc", "pub", "pure", "ref", "return",
+        "Self", "self", "sizeof", "static", "struct",
+        "super", "trait", "true", "type", "typeof",
+        "unsafe", "unsized", "use", "virtual", "where",
+        "while", "yield"
+    ];
+}
+
+pub fn trim(name: String) -> String {
+    let xname = name.split_whitespace().last().unwrap();
+    if KWSET.get(xname).is_none() {
+        xname.into()
+    } else {
+        format!("{}_", xname)
+    }
+}

@@ -1,4 +1,7 @@
+#![feature(set_recovery)] 
+
 extern crate clang;
+#[macro_use] extern crate lazy_static;
 
 #[macro_use] pub mod gen;
 mod types;
