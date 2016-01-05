@@ -24,7 +24,7 @@ pub fn typeconv(ty: TypeKind) -> String {
         TypeKind::Float => "c_float",
         TypeKind::Double => "c_double",
         TypeKind::LongDouble => panic!("hmm.."),
-        TypeKind::Int128 | TypeKind::UInt128 | _ => panic!("Unknown type.")
+        TypeKind::Int128 | TypeKind::UInt128 | _ => panic!("Unknown type. {:?}", ty)
     };
     r.into()
 }

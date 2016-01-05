@@ -46,7 +46,10 @@ macro_rules! dump_const {
 
 macro_rules! dump_res {
     ( $unmap:expr, $entity:expr ) => {
-        match $entity.get_type().and_then(|r| r.get_result_type()) {
+        match $entity.get_type()
+            .and_then(|r| r.get_result_type())
+            .and_then(|r| if r.get_kind() == TypeKind::Void { None } else { Some(r) })
+        {
             Some(ty) => format!(
                 " -> {}{}",
                 dump_const!(ty),
@@ -70,12 +73,11 @@ macro_rules! dump_type {
             .next()
         {
             Some(se) => dump_name!($unmap, se.clone()),
-            None => if $entity.get_type().map_or(false, |r| r.get_kind() == TypeKind::Pointer) {
-                $entity.get_type()
+            None => match $entity.get_type().map(|r| r.get_kind()) {
+                Some(TypeKind::Pointer) => $entity.get_type()
                     .and_then(|r| r.get_pointee_type())
                     .map(|r| r.get_kind())
-                    .map(
-                        |r| if r == TypeKind::Unexposed {
+                    .map(|r| if r == TypeKind::Unexposed {
                             format!(
                                 r#"extern "C" fn({}{}{}){}"#,
                                 "\n",
@@ -83,15 +85,17 @@ macro_rules! dump_type {
                                 dump_tab!($depth),
                                 dump_res!($unmap, $entity)
                             )
-                        } else { typeconv(r) }
-                    )
-                    .unwrap()
-            } else {
-                typeconv(
-                    $entity.get_type()
-                        .map(|r| r.get_kind())
-                        .unwrap()
-                )
+                        } else { typeconv(r) })
+                    .unwrap(),
+                // FIXME if fn
+                Some(TypeKind::Typedef) => format!(
+                    r#"extern "C" fn({}{}{}){}"#,
+                    "\n",
+                    $parm,
+                    dump_tab!($depth),
+                    dump_res!($unmap, $entity)
+                ),
+                _ => typeconv($entity.get_type().map(|r| r.get_kind()).unwrap())
             }
         }
     }

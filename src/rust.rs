@@ -161,12 +161,13 @@ pub fn dump<'tu>(
             ));
         },
         EntityKind::TypedefDecl => {
-            // TODO alias or fn
             out.push_str(&format!(
-                "(TypedefDecl {}\n{}\n{})\n",
+                "pub type {} = {};\n",
                 dump_name!(unmap, entity.clone()),
-                dump_continue!(e of entity, dump(&e, depth + 1, &mut unmap, pat)),
-                dump_tab!(depth)
+                dump_type!(unmap, depth, entity, dump_continue!(
+                    e of entity,
+                    dump(&e, depth + 1, &mut unmap, pat)
+                ))
             ));
         },
         _ => {
