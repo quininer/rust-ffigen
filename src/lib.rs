@@ -1,10 +1,9 @@
 #![feature(set_recovery)]
 
 extern crate clang;
-#[macro_use] extern crate lazy_static;
 
-#[macro_use] pub mod gen;
-mod utils;
+#[macro_use] mod utils;
+mod gen;
 mod ast;
 
 use clang::{ Clang, Index, ParseOptions, TranslationUnit };

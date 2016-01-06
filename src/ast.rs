@@ -1,6 +1,5 @@
-use clang::{ Entity, EntityKind, TypeKind };
-use super::gen::{ UnnamedMap, KeywordSet, Status };
-use super::utils::typeconv;
+use clang::{ Entity, EntityKind };
+use super::gen::Status;
 
 
 pub fn rust_dump<'tu>(
@@ -64,7 +63,7 @@ fn dump<'tu>(
 
             out.push_str(dump_continue!(
                 e in s,
-                dump(&e, &mut status, depth+1, None)
+                dump(&e, &mut status, depth, None)
             ).as_ref());
 
             out.push_str(&format!(
@@ -96,7 +95,7 @@ fn dump<'tu>(
             out.push_str(&format!(
                 "pub {}: {},\n",
                 status.takename(entity.clone()),
-                status.taketype(entity.clone())
+                status.taketype(entity.clone(), None)
             ));
         },
 
@@ -107,6 +106,49 @@ fn dump<'tu>(
                 status.takename(entity.clone()),
                 dump_continue!(e of entity, dump(&e, &mut status, depth+1, None)),
                 dump_tab!(depth)
+            ));
+        },
+
+        EntityKind::EnumConstantDecl => {
+            out.push_str(&format!(
+                "{}{},\n",
+                status.takename(entity.clone()),
+                match entity.get_enum_constant_value().map(|(r, _)| r) {
+                    Some(r) => format!(" = {}", r),
+                    None => String::from("")
+                }
+            ));
+        },
+
+        EntityKind::FunctionDecl => {
+            out.push_str(&format!(
+                "pub fn {}(\n{}{}) -> {};\n",
+                status.takename(entity.clone()),
+                dump_continue!(
+                    e in entity.get_children().iter()
+                        .filter(|r| r.get_kind() == EntityKind::ParmDecl),
+                    dump(&e, &mut status, depth+1, None)
+                ),
+                dump_tab!(depth),
+                status.takeres(entity.clone(), None)
+            ));
+        },
+
+        EntityKind::ParmDecl => {
+            out.push_str(&format!(
+                "{}: {},\n",
+                status.takename(entity.clone()),
+                // FIXME fn parm
+                status.taketype(entity.clone(), None)
+            ));
+        },
+
+        EntityKind::TypedefDecl => {
+            out.push_str(&format!(
+                "pub type {} = {};\n",
+                status.takename(entity.clone()),
+                // FIXME fn type
+                status.taketype(entity.clone, None)
             ));
         },
 

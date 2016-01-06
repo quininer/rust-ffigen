@@ -1,5 +1,33 @@
 use clang::TypeKind;
 
+
+macro_rules! dump_const {
+    ( $ety:expr ) => {
+        $ety
+            .and_then(|r| r.get_pointee_type())
+            .map(|r| if r.is_const_qualified() { "*const " } else { "*mut " })
+    }
+}
+
+macro_rules! dump_continue {
+    ( $sub:ident in $entitys:expr, $exec:expr ) => {{
+        let mut out = String::new();
+        for $sub in $entitys { out.push_str(&$exec) };
+        out
+    }};
+    ( $sub:ident of $entity:expr, $exec:expr ) => {
+        dump_continue!( $sub in $entity.get_children(), $exec )
+    }
+}
+
+macro_rules! dump_tab {
+    ( $depth:expr ) => {{
+        let mut out = String::new();
+        for _ in 0..$depth { out.push('\t'); };
+        out
+    }}
+}
+
 pub fn typeconv(ty: TypeKind) -> String {
     let r = match ty {
         TypeKind::Void => "c_void",

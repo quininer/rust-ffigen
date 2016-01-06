@@ -1,25 +1,7 @@
 use std::collections::{ HashMap, HashSet };
-use clang::Entity;
+use clang::{ Entity, EntityKind, Type, TypeKind };
 
-
-macro_rules! dump_continue {
-    ( $sub:ident in $entitys:expr, $exec:expr ) => {{
-        let mut out = String::new();
-        for $sub in $entitys { out.push_str(&$exec) };
-        out
-    }};
-    ( $sub:ident of $entity:expr, $exec:expr ) => {
-        dump_continue!( $sub in $entity.get_children(), $exec )
-    }
-}
-
-macro_rules! dump_tab {
-    ( $depth:expr ) => {{
-        let mut out = String::new();
-        for _ in 0..$depth { out.push('\t'); };
-        out
-    }}
-}
+use super::utils::typeconv;
 
 
 pub type UnnamedMap<'tu> = HashMap<Entity<'tu>, String>;
@@ -55,7 +37,49 @@ impl<'tu> Status<'tu> {
         }
     }
 
-    pub fn taketype(&mut self, entity: Entity<'tu>) -> String {
-        String::from("TODO")
+    // FIXME Should give priority to use .next ?
+    // TODO use dump
+    pub fn taketype(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
+        let enty = enty.or(entity.get_type());
+        match enty.map(|r| r.get_kind()) {
+            // Some(TypeKind::Pointer) => { /* x fn */ },
+            Some(TypeKind::Typedef) | Some(TypeKind::Unexposed) => {
+                unimplemented!()
+            },
+            // Some(TypeKind::ConstantArray) => { /* array */ },
+            // Some(TypeKind::IncompleteArray) => { /* x array */ },
+            _ => self.takenext(entity, enty)
+        }
+    }
+
+    pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
+        let enty = enty.or(entity.get_type());
+        match entity.get_children().iter()
+            .filter(|r| r.get_kind() == EntityKind::TypeRef)
+            .next()
+        {
+            Some(se) => self.takename(se.clone()),
+            None => enty
+                .and_then(|r| r.get_element_type())
+                .or(enty)
+                .map(|r| r.get_kind())
+                .map(|r| typeconv(r))
+                .unwrap()
+        }
+    }
+
+    pub fn takeres(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
+        let enty = enty.or(entity.get_type());
+        match enty
+            .and_then(|r| r.get_result_type())
+            .and_then(|r| if r.get_kind() == TypeKind::Void { None } else { Some(r) } )
+        {
+            Some(ty) => format!(
+                "{}{}",
+                dump_const!(Some(ty)).unwrap_or(""),
+                self.taketype(entity, Some(ty))
+            ),
+            None => String::from("()")
+        }
     }
 }
