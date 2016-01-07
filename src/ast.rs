@@ -6,6 +6,8 @@ pub fn rust_dump<'tu>(
     entity: &Entity<'tu>,
     mut status: &mut Status<'tu>,
 ) -> String {
+    status.dump = Some(dump);
+
     format!(concat!(
         "//! ffigen generate.\n",
         "\n",
@@ -28,6 +30,18 @@ fn dump<'tu>(
     prefix: Option<String>
 ) -> String {
     let mut out = String::new();
+
+    out.push_str(
+        &entity.get_comment()
+            .map(|r| (dump_tab!(depth), r))
+            .map(|(d, r)| r.lines()
+                 .map(|x| format!("{}{}\n", d, x))
+                 .collect::<Vec<String>>()
+                 .concat()
+            )
+            .unwrap_or(String::new())
+    );
+
     out.push_str(dump_tab!(depth).as_ref());
 
     match entity.get_kind() {
@@ -37,7 +51,7 @@ fn dump<'tu>(
             let mut f = Vec::new();
 
             for e in entity.get_children().iter()
-                .filter(|&r| r.get_location().map_or(false, |r| r.is_in_main_file()))
+                .filter(|&r| status.inheader(r.clone()))
             {
                 match e.get_kind() {
                     EntityKind::TypedefDecl => t.push(e.clone()),
@@ -95,7 +109,7 @@ fn dump<'tu>(
             out.push_str(&format!(
                 "pub {}: {},\n",
                 status.takename(entity.clone()),
-                status.taketype(entity.clone(), None)
+                status.taketype(entity.clone(), None, depth)
             ));
         },
 
@@ -130,7 +144,7 @@ fn dump<'tu>(
                     dump(&e, &mut status, depth+1, None)
                 ),
                 dump_tab!(depth),
-                status.takeres(entity.clone(), None)
+                status.takeres(entity.clone(), None, depth)
             ));
         },
 
@@ -139,7 +153,7 @@ fn dump<'tu>(
                 "{}: {},\n",
                 status.takename(entity.clone()),
                 // FIXME fn parm
-                status.taketype(entity.clone(), None)
+                status.taketype(entity.clone(), None, depth)
             ));
         },
 
@@ -148,12 +162,16 @@ fn dump<'tu>(
                 "pub type {} = {};\n",
                 status.takename(entity.clone()),
                 // FIXME fn type
-                status.taketype(entity.clone, None)
+                format!(
+                    "{}{}",
+                    dump_const!(entity.get_type()).unwrap_or(""),
+                    status.taketype(entity.clone(), None, depth)
+                )
             ));
         },
 
         kind @ _ => out.push_str(&format!(
-            "(UNknown {}: {:?})\n{}",
+            "(Unknown {}: {:?})\n{}",
             status.takename(entity.clone()),
             kind,
             dump_continue!(e of entity, dump(&e, &mut status, depth+1, None)),

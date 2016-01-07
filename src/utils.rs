@@ -1,6 +1,22 @@
 use clang::TypeKind;
 
 
+pub const TAB: &'static str = "    ";
+
+#[allow(dead_code)]
+pub const COMMENT_LONG: usize = 75;
+
+
+macro_rules! dump_is {
+    ( $e:expr, in $es:expr ) => {{
+        let mut result = false;
+        for e in $es {
+            result = $e == e;
+        }
+        result
+    }}
+}
+
 macro_rules! dump_const {
     ( $ety:expr ) => {
         $ety
@@ -23,9 +39,23 @@ macro_rules! dump_continue {
 macro_rules! dump_tab {
     ( $depth:expr ) => {{
         let mut out = String::new();
-        for _ in 0..$depth { out.push('\t'); };
+        for _ in 0..$depth { out.push_str(super::utils::TAB); };
         out
     }}
+}
+
+
+#[allow(dead_code)]
+pub fn split_comment(comment: String, tab: String) -> String {
+    // FIXME don't split word, don't split code
+    comment.into_bytes().chunks(COMMENT_LONG)
+        .map(|r| format!(
+            "{}/// {}\n",
+            tab,
+            String::from_utf8(r.to_vec()).unwrap()
+        ))
+        .collect::<Vec<String>>()
+        .concat()
 }
 
 pub fn typeconv(ty: TypeKind) -> String {
@@ -49,8 +79,9 @@ pub fn typeconv(ty: TypeKind) -> String {
         TypeKind::ULongLong => "c_ulonglong",
         TypeKind::Float => "c_float",
         TypeKind::Double => "c_double",
-        TypeKind::LongDouble => panic!("hmm.."),
-        TypeKind::Int128 | TypeKind::UInt128 | _ => panic!("Unknown type. {:?}", ty)
+        // TypeKind::LongDouble => panic!("hmm.."),
+        // TypeKind::Int128 | TypeKind::UInt128 | _ => panic!("Unknown type. {:?}", ty)
+        _ => "(Unknown)"
     };
     r.into()
 }

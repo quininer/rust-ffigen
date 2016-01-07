@@ -6,13 +6,20 @@ use super::utils::typeconv;
 
 pub type UnnamedMap<'tu> = HashMap<Entity<'tu>, String>;
 pub type KeywordSet = HashSet<String>;
+pub type DumpFn<'tu> = fn(
+    entity: &Entity<'tu>,
+    mut status: &mut Status<'tu>,
+    depth: usize,
+    prefix: Option<String>
+) -> String;
 
 
-#[derive(Debug)]
 pub struct Status<'tu> {
     pub unmap: &'tu mut UnnamedMap<'tu>,
     pub kwset: &'tu mut KeywordSet,
+    pub headers: Vec<String>,
     pub link: String,
+    pub dump: Option<DumpFn<'tu>>
 }
 
 impl<'tu> Status<'tu> {
@@ -27,6 +34,13 @@ impl<'tu> Status<'tu> {
         }
     }
 
+    pub fn inheader(&self, entity: Entity<'tu>) -> bool {
+        entity.get_location()
+            .map(|r| r.get_file_location().file.get_path())
+            .map(|r| dump_is!(r.to_str().unwrap(), in &self.headers))
+            .unwrap_or(false)
+    }
+
     pub fn takename(&mut self, entity: Entity<'tu>) -> String {
         match entity.get_name() {
             Some(name) => self.trim(name),
@@ -37,38 +51,89 @@ impl<'tu> Status<'tu> {
         }
     }
 
-    // FIXME Should give priority to use .next ?
-    // TODO use dump
-    pub fn taketype(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
+    pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
         let enty = enty.or(entity.get_type());
         match enty.map(|r| r.get_kind()) {
-            // Some(TypeKind::Pointer) => { /* x fn */ },
-            Some(TypeKind::Typedef) | Some(TypeKind::Unexposed) => {
-                unimplemented!()
+            // Some(TypeKind::Pointer) => {
+            //     self.taketype(
+            //         entity,
+            //         enty.and_then(|r| r.get_pointee_type()),
+            //         depth
+            //     )
+            // },
+            // FIXME is fn ??
+            // Some(TypeKind::Typedef) => {
+            //     format!(
+            //         "{}{:?}",
+            //         dump_const!(enty).unwrap_or(""),
+            //         entity.get_type()
+            //     )
+            // },
+            Some(TypeKind::Unexposed) => {
+                format!(
+                    r#"extern "C" fn({}{}{}) -> {}"#,
+                    "\n",
+                    dump_continue!(
+                        e of entity,
+                        self.dump.unwrap()(&e, self, depth+1, None)
+                    ),
+                    dump_tab!(depth),
+                    self.takeres(entity, enty, depth)
+                )
             },
-            // Some(TypeKind::ConstantArray) => { /* array */ },
-            // Some(TypeKind::IncompleteArray) => { /* x array */ },
-            _ => self.takenext(entity, enty)
-        }
-    }
-
-    pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
-        let enty = enty.or(entity.get_type());
-        match entity.get_children().iter()
-            .filter(|r| r.get_kind() == EntityKind::TypeRef)
-            .next()
-        {
-            Some(se) => self.takename(se.clone()),
-            None => enty
-                .and_then(|r| r.get_element_type())
-                .or(enty)
+            Some(TypeKind::IncompleteArray) => {
+                self.taketype(
+                    entity,
+                    enty.and_then(|r| r.get_element_type()),
+                    depth
+                )
+            },
+            Some(TypeKind::ConstantArray) => {
+                match enty.and_then(|r| r.get_size()) {
+                    Some(len) => format!(
+                        "[{}{}; {}]",
+                        dump_const!(enty).unwrap_or(""),
+                        self.taketype(
+                            entity,
+                            enty.and_then(|r| r.get_element_type()),
+                            depth
+                        ),
+                        len
+                    ),
+                    None => format!(
+                        "{}{}",
+                        dump_const!(enty).unwrap_or(""),
+                        self.taketype(
+                            entity,
+                            enty.and_then(|r| r.get_element_type()),
+                            depth
+                        )
+                    )
+                }
+            },
+            _ => enty
                 .map(|r| r.get_kind())
                 .map(|r| typeconv(r))
                 .unwrap()
         }
     }
 
-    pub fn takeres(&mut self, entity: Entity<'tu>, enty: Option<Type>) -> String {
+    pub fn taketype(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
+        let enty = enty.or(entity.get_type());
+        match entity.get_children().iter()
+            .filter(|r| r.get_kind() == EntityKind::TypeRef)
+            .next()
+        {
+            Some(se) => format!(
+                "{}{}",
+                dump_const!(enty).unwrap_or(""),
+                self.takename(se.clone())
+            ),
+            None => self.takenext(entity, enty, depth)
+        }
+    }
+
+    pub fn takeres(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
         let enty = enty.or(entity.get_type());
         match enty
             .and_then(|r| r.get_result_type())
@@ -77,7 +142,7 @@ impl<'tu> Status<'tu> {
             Some(ty) => format!(
                 "{}{}",
                 dump_const!(Some(ty)).unwrap_or(""),
-                self.taketype(entity, Some(ty))
+                self.taketype(entity, Some(ty), depth)
             ),
             None => String::from("()")
         }

@@ -24,7 +24,7 @@ macro_rules! set {
 #[derive(Debug, Clone)]
 pub struct GenOptions<'g> {
     pub args: Vec<&'g str>,
-    pub header: Option<&'g str>,
+    pub headers: Vec<String>,
     pub link: String,
     pub parse: ParseOptions
 }
@@ -33,7 +33,7 @@ impl<'g> GenOptions<'g> {
     pub fn new() -> GenOptions<'g> {
         GenOptions {
             args: Vec::new(),
-            header: None,
+            headers: Vec::new(),
             link: String::new(),
             parse: ParseOptions::default(),
         }
@@ -44,7 +44,7 @@ impl<'g> GenOptions<'g> {
         self
     }
     pub fn header(mut self, l: &'g str) -> GenOptions<'g> {
-        self.header = Some(l);
+        self.headers.push(String::from(l));
         self
     }
     pub fn link(mut self, m: &'g str) -> GenOptions<'g> {
@@ -57,7 +57,7 @@ impl<'g> GenOptions<'g> {
         let mut i = Index::new(&c, true, false);
         let t = TranslationUnit::from_source(
             &mut i,
-            self.header.unwrap(),
+            &self.headers[0],
             &self.args[..],
             &[],
             self.parse
@@ -80,7 +80,9 @@ impl<'g> GenOptions<'g> {
         let mut status = Status {
             unmap: &mut UnnamedMap::new(),
             kwset: &mut kwset,
+            headers: self.headers,
             link: self.link,
+            dump: None
         };
 
         rust_dump(&entity, &mut status).into_bytes()
