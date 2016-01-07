@@ -17,7 +17,7 @@ pub fn rust_dump<'tu>(
         "#![allow(non_snake_case)]\n",
         "#![allow(non_upper_case_globals)]\n",
         "\n",
-        "use libc::*;",
+        "use libc::*;\n",
         "\n",
         "{}"
     ), dump(&entity, &mut status, 0, None))
@@ -152,7 +152,6 @@ fn dump<'tu>(
             out.push_str(&format!(
                 "{}: {},\n",
                 status.takename(entity.clone()),
-                // FIXME fn parm
                 status.taketype(entity.clone(), entity.get_type(), depth)
             ));
         },
@@ -161,7 +160,6 @@ fn dump<'tu>(
             out.push_str(&format!(
                 "pub type {} = {};\n",
                 status.takename(entity.clone()),
-                // FIXME fn type
                 format!(
                     "{}{}",
                     dump_const!(entity.get_type()).unwrap_or(""),

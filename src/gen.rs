@@ -54,15 +54,20 @@ impl<'tu> Status<'tu> {
     pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
         match enty.map(|r| r.get_kind()) {
             Some(TypeKind::Pointer) => {
-                format!(
-                    "{}{}",
-                    dump_const!(enty).unwrap_or(""),
-                    self.taketype(
-                        entity,
-                        enty.and_then(|r| r.get_pointee_type()),
-                        depth
+                let poity = enty.and_then(|r| r.get_pointee_type());
+                match poity.map(|r| r.get_kind()) {
+                    Some(TypeKind::Typedef) | Some(TypeKind::Unexposed) =>
+                        self.taketype(entity, poity, depth),
+                    _ => format!(
+                        "{}{}",
+                        dump_const!(enty).unwrap_or(""),
+                        self.taketype(
+                            entity,
+                            enty.and_then(|r| r.get_pointee_type()),
+                            depth
+                        )
                     )
-                )
+                }
             },
             Some(TypeKind::Typedef) | Some(TypeKind::Unexposed) => {
                 format!(
@@ -135,11 +140,17 @@ impl<'tu> Status<'tu> {
             )
             .next()
         {
-            Some(se) => format!(
-                "{}{}",
-                dump_const!(enty).unwrap_or(""),
-                self.takename(se.clone())
-            ),
+            Some(se) => match se.get_type()
+                .map(|r| r.get_canonical_type())
+                .map(|r| r.get_kind())
+            {
+                Some(TypeKind::FunctionPrototype) => self.takename(se.clone()),
+                _ => format!(
+                    "{}{}",
+                    dump_const!(enty).unwrap_or(""),
+                    self.takename(se.clone())
+                )
+            },
             None => self.takenext(entity, enty, depth)
         }
     }
