@@ -52,24 +52,19 @@ impl<'tu> Status<'tu> {
     }
 
     pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
-        let enty = enty.or(entity.get_type());
         match enty.map(|r| r.get_kind()) {
-            // Some(TypeKind::Pointer) => {
-            //     self.taketype(
-            //         entity,
-            //         enty.and_then(|r| r.get_pointee_type()),
-            //         depth
-            //     )
-            // },
-            // FIXME is fn ??
-            // Some(TypeKind::Typedef) => {
-            //     format!(
-            //         "{}{:?}",
-            //         dump_const!(enty).unwrap_or(""),
-            //         entity.get_type()
-            //     )
-            // },
-            Some(TypeKind::Unexposed) => {
+            Some(TypeKind::Pointer) => {
+                format!(
+                    "{}{}",
+                    dump_const!(enty).unwrap_or(""),
+                    self.taketype(
+                        entity,
+                        enty.and_then(|r| r.get_pointee_type()),
+                        depth
+                    )
+                )
+            },
+            Some(TypeKind::Typedef) | Some(TypeKind::Unexposed) => {
                 format!(
                     r#"extern "C" fn({}{}{}) -> {}"#,
                     "\n",
@@ -82,10 +77,14 @@ impl<'tu> Status<'tu> {
                 )
             },
             Some(TypeKind::IncompleteArray) => {
-                self.taketype(
-                    entity,
-                    enty.and_then(|r| r.get_element_type()),
-                    depth
+                format!(
+                    "{}{}",
+                    "*mut ", // FIXME
+                    self.taketype(
+                        entity,
+                        enty.and_then(|r| r.get_element_type()),
+                        depth
+                    )
                 )
             },
             Some(TypeKind::ConstantArray) => {
@@ -111,17 +110,29 @@ impl<'tu> Status<'tu> {
                     )
                 }
             },
-            _ => enty
+            _ => enty.or(entity.get_type())
                 .map(|r| r.get_kind())
                 .map(|r| typeconv(r))
+                .map(|r| format!(
+                    "{}{}",
+                    dump_const!(enty).unwrap_or(""),
+                    r
+                ))
                 .unwrap()
         }
     }
 
     pub fn taketype(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
-        let enty = enty.or(entity.get_type());
         match entity.get_children().iter()
-            .filter(|r| r.get_kind() == EntityKind::TypeRef)
+            .filter(|r| r.get_kind() == EntityKind::TypeRef &&
+                match enty.map(|x| x.get_kind()) {
+                    Some(TypeKind::ConstantArray) => false,
+                    Some(TypeKind::IncompleteArray) => false,
+                    Some(TypeKind::DependentSizedArray) => false,
+                    None => false,
+                    _ => true
+                }
+            )
             .next()
         {
             Some(se) => format!(
@@ -134,14 +145,12 @@ impl<'tu> Status<'tu> {
     }
 
     pub fn takeres(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {
-        let enty = enty.or(entity.get_type());
         match enty
             .and_then(|r| r.get_result_type())
             .and_then(|r| if r.get_kind() == TypeKind::Void { None } else { Some(r) } )
         {
             Some(ty) => format!(
-                "{}{}",
-                dump_const!(Some(ty)).unwrap_or(""),
+                "{}",
                 self.taketype(entity, Some(ty), depth)
             ),
             None => String::from("()")

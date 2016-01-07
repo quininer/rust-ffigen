@@ -109,7 +109,7 @@ fn dump<'tu>(
             out.push_str(&format!(
                 "pub {}: {},\n",
                 status.takename(entity.clone()),
-                status.taketype(entity.clone(), None, depth)
+                status.taketype(entity.clone(), entity.get_type(), depth)
             ));
         },
 
@@ -144,7 +144,7 @@ fn dump<'tu>(
                     dump(&e, &mut status, depth+1, None)
                 ),
                 dump_tab!(depth),
-                status.takeres(entity.clone(), None, depth)
+                status.takeres(entity.clone(), entity.get_type(), depth)
             ));
         },
 
@@ -153,7 +153,7 @@ fn dump<'tu>(
                 "{}: {},\n",
                 status.takename(entity.clone()),
                 // FIXME fn parm
-                status.taketype(entity.clone(), None, depth)
+                status.taketype(entity.clone(), entity.get_type(), depth)
             ));
         },
 
@@ -165,7 +165,7 @@ fn dump<'tu>(
                 format!(
                     "{}{}",
                     dump_const!(entity.get_type()).unwrap_or(""),
-                    status.taketype(entity.clone(), None, depth)
+                    status.taketype(entity.clone(), entity.get_type(), depth)
                 )
             ));
         },
