@@ -44,13 +44,14 @@ impl<'tu> Status<'tu> {
     }
 
     pub fn takename(&mut self, entity: Entity<'tu>) -> String {
-        match entity.get_name() {
-            Some(name) => self.trim(name),
-            None => {
-                let name = format!("Unnamed{}", self.unmap.len());
-                self.unmap.entry(entity).or_insert(name.into()).clone()
-            }
-        }
+        let name = match self.unmap.clone().get(&entity) {
+            Some(nm) => nm.clone(),
+            None => entity.get_name()
+                .map(|r| self.trim(r))
+                .unwrap_or(format!("Unnamed{}", self.unmap.len()))
+        };
+        self.unmap.insert(entity, name.clone());
+        name
     }
 
     pub fn takenext(&mut self, entity: Entity<'tu>, enty: Option<Type>, depth: usize) -> String {

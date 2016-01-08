@@ -99,7 +99,7 @@ fn dump<'tu>(
             } else {
                 out.push_str("\n#[repr(C)]\n#[derive(Copy, Clone, Debug)]\n");
                 out.push_str(&format!(
-                    "\npub struct {} {{\n{}{}}}\n",
+                    "pub struct {} {{\n{}{}}}\n",
                     status.takename(entity.clone()),
                     dump_continue!(e in se, dump(&e, &mut status, depth+1, None)),
                     dump_tab!(depth)
