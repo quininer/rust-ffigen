@@ -31,16 +31,18 @@ fn dump<'tu>(
 ) -> String {
     let mut out = String::new();
 
-    out.push_str(
-        &entity.get_comment()
-            .map(|r| (dump_tab!(depth), r))
-            .map(|(d, r)| r.lines()
-                 .map(|x| format!("{}{}\n", d, x))
-                 .collect::<Vec<String>>()
-                 .concat()
-            )
-            .unwrap_or(String::new())
-    );
+    if status.optcomment {
+        out.push_str(
+            &entity.get_comment()
+                .map(|r| (dump_tab!(depth), r))
+                .map(|(d, r)| r.lines()
+                     .map(|x| format!("{}{}\n", d, x))
+                     .collect::<Vec<String>>()
+                     .concat()
+                )
+                .unwrap_or(String::new())
+        )
+    };
 
     out.push_str(dump_tab!(depth).as_ref());
 

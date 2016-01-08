@@ -19,7 +19,9 @@ pub struct Status<'tu> {
     pub kwset: &'tu mut KeywordSet,
     pub headers: Vec<String>,
     pub link: String,
-    pub dump: Option<DumpFn<'tu>>
+    pub dump: Option<DumpFn<'tu>>,
+    pub optcomment: bool,
+    pub optformat: bool
 }
 
 impl<'tu> Status<'tu> {

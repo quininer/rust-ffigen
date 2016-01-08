@@ -5,7 +5,7 @@ use ffigen::GenOptions;
 
 
 fn main() {
-    // ffigen <link> <out type>
+    // ffigen <header> <link>
 
     let mut argv = args().skip(1);
     let result = GenOptions::new()

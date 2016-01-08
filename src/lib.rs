@@ -2,13 +2,14 @@
 
 extern crate clang;
 
-#[macro_use] mod utils;
+#[macro_use] pub mod utils;
 mod gen;
 mod ast;
 
 use clang::{ Clang, Index, ParseOptions, TranslationUnit };
 use gen::{ UnnamedMap, KeywordSet, Status };
 use ast::rust_dump;
+
 
 macro_rules! set {
     ( $( $e:expr ),* ) => {{
@@ -26,7 +27,9 @@ pub struct GenOptions<'g> {
     pub args: Vec<&'g str>,
     pub headers: Vec<String>,
     pub link: String,
-    pub parse: ParseOptions
+    pub parse: ParseOptions,
+    pub optcomment: bool,
+    pub optformat: bool
 }
 
 impl<'g> GenOptions<'g> {
@@ -36,6 +39,8 @@ impl<'g> GenOptions<'g> {
             headers: Vec::new(),
             link: String::new(),
             parse: ParseOptions::default(),
+            optcomment: false,
+            optformat: false
         }
     }
 
@@ -49,6 +54,14 @@ impl<'g> GenOptions<'g> {
     }
     pub fn link(mut self, m: &'g str) -> GenOptions<'g> {
         self.link = m.into();
+        self
+    }
+    pub fn comment(mut self, enable: bool) -> GenOptions<'g> {
+        self.optcomment = enable;
+        self
+    }
+    pub fn format(mut self, enable: bool) -> GenOptions<'g> {
+        self.optformat = enable;
         self
     }
 
@@ -82,7 +95,9 @@ impl<'g> GenOptions<'g> {
             kwset: &mut kwset,
             headers: self.headers,
             link: self.link,
-            dump: None
+            dump: None,
+            optcomment: self.optcomment,
+            optformat: self.optformat
         };
 
         rust_dump(&entity, &mut status).into_bytes()

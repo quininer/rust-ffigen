@@ -84,3 +84,31 @@ pub fn typeconv(ty: TypeKind) -> String {
     };
     r.into()
 }
+
+/// Convert naming style.
+///
+/// # Example
+///
+/// ```
+/// use ffigen::utils::to_hump;
+///
+/// assert_eq!(
+///     to_hump(String::from("BOOB_NAME")),
+///     String::from("BoobName")
+/// );
+///
+/// assert_eq!(
+///     to_hump(String::from("boob_name")),
+///     String::from("BoobName")
+/// );
+/// ```
+pub fn to_hump(name: String) -> String {
+    name.split("_")
+        .map(|r| format!(
+            "{}{}",
+            &r[0..1].to_uppercase(),
+            &r[1..].to_lowercase()
+        ))
+        .collect::<Vec<String>>()
+        .concat()
+}
