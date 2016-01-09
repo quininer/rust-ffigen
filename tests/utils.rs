@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate ffigen;
 
 pub const CLANG_INCLUDE_PATH: &'static str = "/usr/lib/clang/3.7.0/include/";

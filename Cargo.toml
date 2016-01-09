@@ -6,4 +6,5 @@ authors = ["quininer <quininer@live.com>"]
 [dependencies]
 
 [dependencies.clang]
+version = "0.3.*"
 git = "https://github.com/KyleMayes/clang-rs.git"

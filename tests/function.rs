@@ -5,7 +5,7 @@ extern crate ffigen;
 use ffigen::GenOptions;
 use utils::{
     CLANG_INCLUDE_PATH,
-    HEAD, TAIL
+    HEAD
 };
 
 
