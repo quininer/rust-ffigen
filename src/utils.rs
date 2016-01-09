@@ -102,6 +102,7 @@ pub fn typeconv(ty: TypeKind) -> String {
 ///     String::from("BoobName")
 /// );
 /// ```
+#[allow(dead_code)]
 pub fn to_hump(name: String) -> String {
     name.split("_")
         .map(|r| format!(

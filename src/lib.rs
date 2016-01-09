@@ -41,7 +41,7 @@ impl<'g> GenOptions<'g> {
             link: String::new(),
             parse: ParseOptions::default(),
             optcomment: false,
-            optformat: false
+            optformat: true
         }
     }
 
@@ -67,7 +67,7 @@ impl<'g> GenOptions<'g> {
     }
 
     pub fn gen(self) -> Vec<u8> {
-        let c = Clang::new().unwrap();
+        let c = Clang::new().expect("clang init error.");
         let mut i = Index::new(&c, true, false);
         let t = TranslationUnit::from_source(
             &mut i,
@@ -75,7 +75,7 @@ impl<'g> GenOptions<'g> {
             &self.args[..],
             &[],
             self.parse
-        ).unwrap();
+        ).expect("TranslationUnit init error.");
         let mut kwset = set![
             "abstract", "alignof", "as", "become", "box",
             "break", "const", "continue", "crate", "do",

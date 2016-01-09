@@ -2,25 +2,32 @@ use clang::{ Entity, EntityKind };
 use super::gen::Status;
 use super::utils::{ fetch_prefix, trim_prefix };
 
+
 pub fn rust_dump<'tu>(
     entity: &Entity<'tu>,
     mut status: &mut Status<'tu>,
 ) -> String {
     status.dump = Some(dump);
 
-    format!(concat!(
-        "//! ffigen generate.\n",
-        "\n",
-        "#![allow(non_camel_case_types)]\n",
-        "#![allow(dead_code)]\n",
-        "#![allow(unused_attributes)]\n",
-        "#![allow(non_snake_case)]\n",
-        "#![allow(non_upper_case_globals)]\n",
-        "\n",
-        "use libc::*;\n",
-        "\n",
-        "{}"
-    ), dump(&entity, &mut status, 0, None))
+    let out = dump(&entity, &mut status, 0, None);
+
+    if status.optformat {
+        format!(concat!(
+            "//! ffigen generate.\n",
+            "\n",
+            "#![allow(non_camel_case_types)]\n",
+            "#![allow(dead_code)]\n",
+            "#![allow(unused_attributes)]\n",
+            "#![allow(non_snake_case)]\n",
+            "#![allow(non_upper_case_globals)]\n",
+            "\n",
+            "use libc::*;\n",
+            "\n",
+            "{}"
+        ), out)
+    } else {
+        out
+    }
 }
 
 fn dump<'tu>(
@@ -134,9 +141,12 @@ fn dump<'tu>(
         },
 
         EntityKind::EnumConstantDecl => {
+            let name = status.takename(entity.clone());
             out.push_str(&format!(
                 "{}{},\n",
-                trim_prefix(&status.takename(entity.clone()), &prefix.unwrap()),
+                if status.optformat {
+                    trim_prefix(&name, &prefix.unwrap())
+                } else { name },
                 match entity.get_enum_constant_value().map(|(r, _)| r) {
                     Some(r) => format!(" = {}", r),
                     None => String::new()

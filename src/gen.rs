@@ -26,7 +26,7 @@ pub struct Status<'tu> {
 
 impl<'tu> Status<'tu> {
     pub fn trim(&mut self, name: String) -> String {
-        let name = name.split_whitespace().last().unwrap();
+        let name = name.split_whitespace().last().expect("trim split name.");
         if self.kwset.get(name).is_none() {
             name.into()
         } else {

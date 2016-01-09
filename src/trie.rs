@@ -64,4 +64,10 @@ fn prefix_works() {
     t.insert("dump_tab".bytes().collect());
     let p = t.prefix();
     assert_eq!(p, "dump_".bytes().collect::<Vec<u8>>());
+
+    let mut t = Trie::new();
+    t.insert("x_dump_continue".bytes().collect());
+    t.insert("dump_tab".bytes().collect());
+    let p = t.prefix();
+    assert_eq!(p, Vec::new());
 }
