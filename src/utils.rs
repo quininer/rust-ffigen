@@ -1,5 +1,5 @@
 use clang::TypeKind;
-
+use super::trie::Trie;
 
 pub const TAB: &'static str = "    ";
 
@@ -111,4 +111,37 @@ pub fn to_hump(name: String) -> String {
         ))
         .collect::<Vec<String>>()
         .concat()
+}
+
+/// Fetch strings prefix.
+///
+/// # Example
+///
+/// ```
+/// use ffigen::utils::fetch_prefix;
+///
+/// assert_eq!(
+///     "dump",
+///     &fetch_prefix(vec![
+///         String::from("dump_continue"),
+///         String::from("dump_const"),
+///         String::from("dump_tab")
+///     ])
+/// )
+/// ```
+pub fn fetch_prefix(strings: Vec<String>) -> String {
+    let mut t = Trie::new();
+    for s in strings {
+        t.insert(s.split('_').map(|r| r.to_owned()).collect());
+    }
+    t.prefix().join("_")
+}
+
+
+pub fn trim_prefix(name: &str, prefix: &str) -> String {
+    name.split('_')
+        .skip(prefix.split('_').count())
+        .map(|r| r.to_owned())
+        .collect::<Vec<String>>()
+        .join("_")
 }

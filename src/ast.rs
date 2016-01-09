@@ -1,6 +1,6 @@
 use clang::{ Entity, EntityKind };
 use super::gen::Status;
-
+use super::utils::{ fetch_prefix, trim_prefix };
 
 pub fn rust_dump<'tu>(
     entity: &Entity<'tu>,
@@ -97,7 +97,7 @@ fn dump<'tu>(
                     status.takename(entity.clone())
                 ));
             } else {
-                out.push_str("\n#[repr(C)]\n#[derive(Copy, Clone, Debug)]\n");
+                out.push_str("\n#[repr(C)]\n#[derive(Copy, Clone, Debug, PartialEq)]\n");
                 out.push_str(&format!(
                     "pub struct {} {{\n{}{}}}\n",
                     status.takename(entity.clone()),
@@ -116,11 +116,19 @@ fn dump<'tu>(
         },
 
         EntityKind::EnumDecl => {
-            out.push_str("\n#[repr(C)]\n#[derive(Copy, Clone, Debug)]\n");
+            out.push_str("\n#[repr(C)]\n#[derive(Copy, Clone, Debug, PartialEq)]\n");
             out.push_str(&format!(
                 "pub enum {} {{\n{}{}}}\n",
                 status.takename(entity.clone()),
-                dump_continue!(e of entity, dump(&e, &mut status, depth+1, None)),
+                dump_continue!(
+                    e of entity,
+                    dump(&e, &mut status, depth+1, Some(fetch_prefix(
+                        entity.get_children().iter()
+                            .filter(|r| r.get_kind() == EntityKind::EnumConstantDecl)
+                            .map(|r| r.get_name().unwrap_or(String::new()))
+                            .collect()
+                    )))
+                ),
                 dump_tab!(depth)
             ));
         },
@@ -128,10 +136,10 @@ fn dump<'tu>(
         EntityKind::EnumConstantDecl => {
             out.push_str(&format!(
                 "{}{},\n",
-                status.takename(entity.clone()),
+                trim_prefix(&status.takename(entity.clone()), &prefix.unwrap()),
                 match entity.get_enum_constant_value().map(|(r, _)| r) {
                     Some(r) => format!(" = {}", r),
-                    None => String::from("")
+                    None => String::new()
                 }
             ));
         },

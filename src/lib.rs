@@ -3,6 +3,7 @@
 extern crate clang;
 
 #[macro_use] pub mod utils;
+mod trie;
 mod gen;
 mod ast;
 
