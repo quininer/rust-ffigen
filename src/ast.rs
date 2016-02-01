@@ -15,10 +15,10 @@ pub fn rust_dump<'tu>(
         format!(concat!(
             "//! ffigen generate.\n",
             "\n",
-            "#![allow(non_camel_case_types)]\n",
             "#![allow(dead_code)]\n",
-            "#![allow(unused_attributes)]\n",
             "#![allow(non_snake_case)]\n",
+            "#![allow(unused_attributes)]\n",
+            "#![allow(non_camel_case_types)]\n",
             "#![allow(non_upper_case_globals)]\n",
             "\n",
             "use libc::*;\n",

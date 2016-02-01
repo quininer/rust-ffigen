@@ -92,15 +92,8 @@ pub fn typeconv(ty: TypeKind) -> String {
 /// ```
 /// use ffigen::utils::to_hump;
 ///
-/// assert_eq!(
-///     to_hump(String::from("BOOB_NAME")),
-///     String::from("BoobName")
-/// );
-///
-/// assert_eq!(
-///     to_hump(String::from("boob_name")),
-///     String::from("BoobName")
-/// );
+/// assert_eq!(to_hump(String::from("BOOB_NAME")), "BoobName");
+/// assert_eq!(to_hump(String::from("boob_name")), "BoobName");
 /// ```
 #[allow(dead_code)]
 pub fn to_hump(name: String) -> String {

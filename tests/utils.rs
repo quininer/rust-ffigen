@@ -5,10 +5,10 @@ extern crate ffigen;
 pub const CLANG_INCLUDE_PATH: &'static str = "/usr/lib/clang/3.7.0/include/";
 pub const HEAD: &'static str = "//! ffigen generate.
 
-#![allow(non_camel_case_types)]
 #![allow(dead_code)]
-#![allow(unused_attributes)]
 #![allow(non_snake_case)]
+#![allow(unused_attributes)]
+#![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
 use libc::*;";
