@@ -39,7 +39,7 @@ impl<'tu> Status<'tu> {
     pub fn inheader(&self, entity: Entity<'tu>) -> bool {
         entity.get_location()
             .map(|r| r.get_file_location().file.get_path())
-            .map(|r| dump_is!(r.to_str().unwrap(), in &self.headers))
+            .map(|r| self.headers.iter().any(|h| h == r.to_str().unwrap()))
             .unwrap_or(false)
     }
 

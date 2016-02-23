@@ -7,16 +7,6 @@ pub const TAB: &'static str = "    ";
 pub const COMMENT_LONG: usize = 75;
 
 
-macro_rules! dump_is {
-    ( $e:expr, in $es:expr ) => {{
-        let mut result = false;
-        for e in $es {
-            result = $e == e || result;
-        }
-        result
-    }}
-}
-
 macro_rules! dump_const {
     ( $ety:expr ) => {
         $ety
