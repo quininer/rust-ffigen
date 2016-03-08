@@ -37,6 +37,11 @@ extern "C" {
             Unnamed14: c_int,
         ) -> c_int,
     ) -> c_int;
+    pub fn foo8(
+        test: extern "C" fn(
+            test2: c_int,
+        ) -> c_int,
+    ) -> c_int;
 }"#);
     assert_eq!(out.into_bytes(), gen!("function.h"));
 }
