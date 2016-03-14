@@ -39,16 +39,17 @@ impl<'tu> Status<'tu> {
     pub fn inheader(&self, entity: Entity<'tu>) -> bool {
         entity.get_location()
             .map(|r| r.get_file_location().file.get_path())
-            .map(|r| self.headers.iter().any(|h| h == r.to_str().unwrap()))
-            .unwrap_or(false)
+            .map_or(false, |r| self.headers.iter().any(|h| h == r.to_str().unwrap()))
     }
 
     pub fn takename(&mut self, entity: Entity<'tu>) -> String {
         let name = match self.unmap.clone().get(&entity) {
             Some(nm) => nm.clone(),
             None => entity.get_name()
-                .map(|r| self.trim(r))
-                .unwrap_or(format!("Unnamed{}", self.unmap.len()))
+                .map_or(
+                    format!("Unnamed{}", self.unmap.len()),
+                    |r| self.trim(r)
+                )
         };
         self.unmap.insert(entity, name.clone());
         name
@@ -120,7 +121,7 @@ impl<'tu> Status<'tu> {
             },
             _ => enty.or(entity.get_type())
                 .map(|r| r.get_kind())
-                .map(|r| typeconv(r))
+                .map(typeconv)
                 .map(|r| format!(
                     "{}{}",
                     dump_const!(enty).unwrap_or(""),
@@ -134,10 +135,10 @@ impl<'tu> Status<'tu> {
         match entity.get_children().iter()
             .filter(|r| r.get_kind() == EntityKind::TypeRef &&
                 match enty.map(|x| x.get_kind()) {
-                    Some(TypeKind::ConstantArray) => false,
-                    Some(TypeKind::IncompleteArray) => false,
-                    Some(TypeKind::DependentSizedArray) => false,
-                    None => false,
+                    Some(TypeKind::ConstantArray)
+                    | Some(TypeKind::IncompleteArray)
+                    | Some(TypeKind::DependentSizedArray)
+                    | None => false,
                     _ => true
                 }
             )
@@ -147,7 +148,7 @@ impl<'tu> Status<'tu> {
                 .map(|r| r.get_canonical_type())
                 .map(|r| r.get_kind())
             {
-                Some(TypeKind::FunctionPrototype) => self.takename(se.clone()),
+                Some(TypeKind::FunctionPrototype) => self.takename(*se),
                 _ => format!(
                     "{}{}",
                     dump_const!(enty).unwrap_or(""),
@@ -163,10 +164,7 @@ impl<'tu> Status<'tu> {
             .and_then(|r| r.get_result_type())
             .and_then(|r| if r.get_kind() == TypeKind::Void { None } else { Some(r) } )
         {
-            Some(ty) => format!(
-                "{}",
-                self.taketype(entity, Some(ty), depth)
-            ),
+            Some(ty) => self.taketype(entity, Some(ty), depth).to_owned(),
             None => String::from("()")
         }
     }

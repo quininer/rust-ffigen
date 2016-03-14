@@ -42,12 +42,11 @@ fn dump<'tu>(
         out.push_str(
             &entity.get_comment()
                 .map(|r| (dump_tab!(depth), r))
-                .map(|(d, r)| r.lines()
+                .map_or(String::new(), |(d, r)| r.lines()
                      .map(|x| format!("{}{}\n", d, x))
                      .collect::<Vec<String>>()
                      .concat()
                 )
-                .unwrap_or(String::new())
         )
     };
 
@@ -60,24 +59,24 @@ fn dump<'tu>(
             let mut f = Vec::new();
 
             for e in entity.get_children().iter()
-                .filter(|&r| status.inheader(r.clone()))
+                .filter(|&r| status.inheader(*r))
             {
                 match e.get_kind() {
-                    EntityKind::TypedefDecl => t.push(e.clone()),
-                    EntityKind::FunctionDecl => f.push(e.clone()),
-                    _ => s.push(e.clone())
+                    EntityKind::TypedefDecl => t.push(*e),
+                    EntityKind::FunctionDecl => f.push(*e),
+                    _ => s.push(*e)
                 };
             }
 
             for e in t {
                 let se = e.get_children();
                 if se.len() == 1 && match se[0].get_kind() {
-                    EntityKind::StructDecl => true,
-                    EntityKind::TypeRef => true,
-                    EntityKind::EnumDecl => true,
+                    EntityKind::StructDecl
+                    | EntityKind::TypeRef
+                    | EntityKind::EnumDecl => true,
                     _ => false
                 } {
-                    let name = status.takename(e.clone());
+                    let name = status.takename(e);
                     status.unmap.insert(se[0], name);
                 } else {
                     out.push_str(&dump(&e, &mut status, depth, None));
@@ -98,7 +97,7 @@ fn dump<'tu>(
 
         EntityKind::StructDecl => {
             let se = entity.get_children();
-            if se.len() == 0 {
+            if se.is_empty() {
                 out.push_str(&format!(
                     "\npub enum {} {{}}\n",
                     status.takename(entity.clone())
@@ -141,7 +140,7 @@ fn dump<'tu>(
         },
 
         EntityKind::EnumConstantDecl => {
-            let name = status.takename(entity.clone());
+            let name = status.takename(*entity);
             out.push_str(&format!(
                 "{}{},\n",
                 if status.optformat {
@@ -188,7 +187,7 @@ fn dump<'tu>(
             ));
         },
 
-        kind @ _ => out.push_str(&format!(
+        kind => out.push_str(&format!(
             "(Unknown {}: {:?})\n{}",
             status.takename(entity.clone()),
             kind,

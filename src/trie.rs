@@ -10,13 +10,16 @@ pub struct Trie<V> where V: Eq+Hash+Clone {
     children: HashMap<V, Trie<V>>,
 }
 
-impl<V> Trie<V> where V: Eq+Hash+Clone {
-    pub fn new() -> Trie<V> {
+impl<V> Default for Trie<V> where V: Eq+Hash+Clone {
+    fn default() -> Trie<V> {
         Trie {
             value: None,
             children: HashMap::new(),
         }
     }
+}
+
+impl<V> Trie<V> where V: Eq+Hash+Clone {
     pub fn set(mut self, v: V) -> Trie<V> {
         self.value = Some(v);
         self
@@ -26,7 +29,7 @@ impl<V> Trie<V> where V: Eq+Hash+Clone {
         if !path.is_empty() {
             self.children
                 .entry(path[0].clone())
-                .or_insert(Trie::new().set(path[0].clone()))
+                .or_insert(Trie::default().set(path[0].clone()))
                 .insert(path[1..].to_vec())
         };
     }
@@ -54,18 +57,18 @@ impl<V> Trie<V> where V: Eq+Hash+Clone {
 
 #[test]
 fn prefix_works() {
-    let mut t = Trie::new();
+    let mut t = Trie::default();
     t.insert(vec![1]);
     let p = t.prefix();
     assert_eq!(p, vec![1]);
 
-    let mut t = Trie::new();
+    let mut t = Trie::default();
     t.insert("dump_continue".bytes().collect());
     t.insert("dump_tab".bytes().collect());
     let p = t.prefix();
     assert_eq!(p, "dump_".bytes().collect::<Vec<u8>>());
 
-    let mut t = Trie::new();
+    let mut t = Trie::default();
     t.insert("x_dump_continue".bytes().collect());
     t.insert("dump_tab".bytes().collect());
     let p = t.prefix();

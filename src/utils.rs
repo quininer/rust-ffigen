@@ -52,8 +52,7 @@ pub fn typeconv(ty: TypeKind) -> String {
     let r = match ty {
         TypeKind::Void => "c_void",
         TypeKind::Bool => "bool",
-        TypeKind::CharS => "c_char",
-        TypeKind::CharU => "c_char",
+        TypeKind::CharS | TypeKind::CharU => "c_char",
         TypeKind::SChar => "c_schar",
         TypeKind::UChar => "c_uchar",
         TypeKind::WChar => "wchat_t",
@@ -87,7 +86,7 @@ pub fn typeconv(ty: TypeKind) -> String {
 /// ```
 #[allow(dead_code)]
 pub fn to_hump(name: String) -> String {
-    name.split("_")
+    name.split('_')
         .map(|r| format!(
             "{}{}",
             &r[0..1].to_uppercase(),
@@ -114,7 +113,7 @@ pub fn to_hump(name: String) -> String {
 /// )
 /// ```
 pub fn fetch_prefix(strings: Vec<String>) -> String {
-    let mut t = Trie::new();
+    let mut t = Trie::default();
     for s in strings {
         t.insert(s.split('_').map(|r| r.to_owned()).collect());
     }

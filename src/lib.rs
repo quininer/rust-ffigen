@@ -33,8 +33,8 @@ pub struct GenOptions<'g> {
     pub optformat: bool
 }
 
-impl<'g> GenOptions<'g> {
-    pub fn new() -> GenOptions<'g> {
+impl<'g> Default for GenOptions<'g> {
+    fn default() -> GenOptions<'g> {
         GenOptions {
             args: Vec::new(),
             headers: Vec::new(),
@@ -44,7 +44,9 @@ impl<'g> GenOptions<'g> {
             optformat: true
         }
     }
+}
 
+impl<'g> GenOptions<'g> {
     pub fn arg(mut self, a: &'g str) -> GenOptions<'g> {
         self.args.push(a);
         self
@@ -68,9 +70,9 @@ impl<'g> GenOptions<'g> {
 
     pub fn gen(self) -> Vec<u8> {
         let c = Clang::new().expect("clang init error.");
-        let mut i = Index::new(&c, true, false);
+        let i = Index::new(&c, true, false);
         let t = TranslationUnit::from_source(
-            &mut i,
+            &i,
             &self.headers[0],
             &self.args[..],
             &[],

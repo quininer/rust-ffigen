@@ -19,7 +19,7 @@ extern "C" {
 
 macro_rules! gen {
     ( $l:expr, [ $( $h:expr ),* ], $f:expr ) => {
-        GenOptions::new()
+        GenOptions::default()
             .arg(&format!("-I{}", CLANG_INCLUDE_PATH))
         $(
             .header(&format!("{}/tests/headers/{}", env!("PWD"), $h))
