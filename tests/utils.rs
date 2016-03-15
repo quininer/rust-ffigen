@@ -2,7 +2,6 @@
 
 extern crate ffigen;
 
-pub const CLANG_INCLUDE_PATH: &'static str = "/usr/lib/clang/3.7.0/include/";
 pub const HEAD: &'static str = "//! ffigen generate.
 
 #![allow(dead_code)]
@@ -20,7 +19,7 @@ extern "C" {
 macro_rules! gen {
     ( $l:expr, [ $( $h:expr ),* ], $f:expr ) => {
         GenOptions::default()
-            .arg(&format!("-I{}", CLANG_INCLUDE_PATH))
+            .arg(&format!("-I{}", ffigen::find_clang_include_path().to_string_lossy()))
         $(
             .header(&format!("{}/tests/headers/{}", env!("PWD"), $h))
         )*

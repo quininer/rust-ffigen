@@ -3,10 +3,7 @@ extern crate ffigen;
 #[macro_use] mod utils;
 
 use ffigen::GenOptions;
-use utils::{
-    CLANG_INCLUDE_PATH,
-    HEAD
-};
+use utils::HEAD;
 
 
 #[test]

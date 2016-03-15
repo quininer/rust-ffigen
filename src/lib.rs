@@ -7,6 +7,8 @@ mod trie;
 mod gen;
 mod ast;
 
+use std::env::var;
+use std::path::{ Path, PathBuf };
 use clang::{ Clang, Index, ParseOptions, TranslationUnit };
 use gen::{ UnnamedMap, KeywordSet, Status };
 use ast::rust_dump;
@@ -89,7 +91,10 @@ impl<'g> GenOptions<'g> {
             "Self", "self", "sizeof", "static", "struct",
             "super", "trait", "true", "type", "typeof",
             "unsafe", "unsized", "use", "virtual", "where",
-            "while", "yield"
+            "while", "yield",
+
+            // other
+            "try", "catch"
         ];
 
         let entity = t.get_entity();
@@ -105,4 +110,42 @@ impl<'g> GenOptions<'g> {
 
         rust_dump(&entity, &mut status).into_bytes()
     }
+}
+
+pub fn find_clang_include_path() -> PathBuf {
+    let env_path = var("CLANG_PATH")
+        .unwrap_or("/usr/lib/clang".into());
+
+    let clang_path = [
+        Path::new(&env_path),
+        Path::new("/usr/lib/clang"),
+        Path::new("/usr/local/lib/clang")
+    ].iter()
+        .cloned()
+        .find(|p| p.is_dir())
+        .unwrap();
+
+    clang_path.read_dir().ok()
+        .and_then(|r| r.last())
+        .and_then(|r| r.ok())
+        .unwrap()
+        .path()
+        .join("include")
+}
+
+pub fn find_include_header<P: AsRef<Path>>(header: P) -> PathBuf {
+    let header = header.as_ref();
+    let env_path = var("INCLUDE_PATH")
+        .unwrap_or("/usr/include".into());
+
+    [
+        Path::new(&env_path),
+        Path::new("."),
+        Path::new("/usr/include"),
+        Path::new("/usr/local/include")
+    ].iter()
+        .cloned()
+        .map(|p| p.join(header))
+        .find(|p| p.is_file())
+        .unwrap()
 }
