@@ -149,3 +149,23 @@ pub fn find_include_header<P: AsRef<Path>>(header: P) -> PathBuf {
         .find(|p| p.is_file())
         .unwrap()
 }
+
+#[macro_export]
+macro_rules! gen {
+    ( $l:expr, [ $( $h:expr ),* ] ) => {
+        $crate::GenOptions::default()
+            .arg(&format!(
+                "-I{}",
+                $crate::find_clang_include_path().to_string_lossy()
+            ))
+        $(
+            .header(&$crate::find_include_header($h).to_string_lossy())
+        )*
+            .link($l)
+            .gen()
+    };
+    ( $l:expr, [ $( $h:expr ),* ] -> $o:expr ) => {
+        File::create($o).unwrap()
+            .write(&gen!($l, [ $( $h, )* ])).unwrap()
+    }
+}
