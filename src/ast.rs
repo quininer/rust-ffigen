@@ -187,12 +187,14 @@ fn dump<'tu>(
             ));
         },
 
-        kind => out.push_str(&format!(
-            "(Unknown {}: {:?})\n{}",
-            status.takename(entity.clone()),
-            kind,
-            dump_continue!(e of entity, dump(&e, &mut status, depth+1, None)),
-        ))
+        kind => panic!("{}: {:?}", status.takename(entity.clone()), kind)
+
+        // kind => out.push_str(&format!(
+        //     "(Unknown {}: {:?})\n{}",
+        //     status.takename(entity.clone()),
+        //     kind,
+        //     dump_continue!(e of entity, dump(&e, &mut status, depth+1, None)),
+        // ))
     }
 
     out
