@@ -164,8 +164,10 @@ macro_rules! gen {
             .link($l)
             .gen()
     };
-    ( $l:expr, [ $( $h:expr ),* ] -> $o:expr ) => {
+    ( $l:expr, [ $( $h:expr ),* ] -> $o:expr ) => {{
+        use std::fs::File;
+        use std::io::Write;
         File::create($o).unwrap()
             .write(&gen!($l, [ $( $h, )* ])).unwrap()
-    }
+    }}
 }
