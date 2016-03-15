@@ -168,6 +168,6 @@ macro_rules! gen {
         use std::fs::File;
         use std::io::Write;
         File::create($o).unwrap()
-            .write(&gen!($l, [ $( $h, )* ])).unwrap()
+            .write(&gen!($l, [ $( $h ),* ])).unwrap()
     }}
 }
