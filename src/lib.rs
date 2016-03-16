@@ -114,7 +114,7 @@ impl<'g> GenOptions<'g> {
 
 pub fn find_clang_include_path() -> PathBuf {
     let env_path = var("CLANG_PATH")
-        .unwrap_or("/usr/lib/clang".into());
+        .unwrap_or("clang".into());
 
     let clang_path = [
         Path::new(&env_path),
@@ -136,11 +136,10 @@ pub fn find_clang_include_path() -> PathBuf {
 pub fn find_include_header<P: AsRef<Path>>(header: P) -> PathBuf {
     let header = header.as_ref();
     let env_path = var("INCLUDE_PATH")
-        .unwrap_or("/usr/include".into());
+        .unwrap_or(".".into());
 
     [
         Path::new(&env_path),
-        Path::new("."),
         Path::new("/usr/include"),
         Path::new("/usr/local/include")
     ].iter()
