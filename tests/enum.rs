@@ -15,5 +15,5 @@ pub enum test {
     ONE = 0,
     TWO = 1,
 }"#, TAIL);
-    assert_eq!(out.into_bytes(), gen!("enum.h"));
+    assert_eq!(out, String::from_utf8_lossy(&gen!("enum.h")));
 }

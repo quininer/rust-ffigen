@@ -1,6 +1,6 @@
 [package]
 name = "ffigen"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["quininer <quininer@live.com>"]
 
 [dependencies.clang]

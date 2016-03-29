@@ -105,7 +105,7 @@ pub fn to_hump(name: String) -> String {
 ///
 /// assert_eq!(
 ///     "dump",
-///     &fetch_prefix(vec![
+///     fetch_prefix(vec![
 ///         String::from("dump_continue"),
 ///         String::from("dump_const"),
 ///         String::from("dump_tab")
@@ -124,7 +124,14 @@ pub fn fetch_prefix(strings: Vec<String>) -> String {
 pub fn trim_prefix(name: &str, prefix: &str) -> String {
     name.split('_')
         .skip(prefix.split('_').count())
-        .map(|r| r.to_owned())
+        .map(|r| if r.chars()
+             .next()
+             .map(|u| u.is_numeric())
+             .unwrap_or(false) {
+                 format!("_{}", r)
+             } else {
+                 r.to_owned()
+             })
         .collect::<Vec<String>>()
         .join("_")
 }
