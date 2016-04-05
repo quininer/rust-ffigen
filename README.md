@@ -5,6 +5,9 @@ Simple `ffi.rs` generation tool.
 
 Note that it does not apply to all situations.
 
+**deprecated**
+**recommend [crustacean](https://github.com/KyleMayes/crustacean)**
+
 examples
 --------
 
