@@ -3,6 +3,5 @@ name = "ffigen"
 version = "0.2.4"
 authors = ["quininer <quininer@live.com>"]
 
-[dependencies.clang]
-version = "0.5"
-git = "https://github.com/KyleMayes/clang-rs.git"
+[dependencies]
+clang = "0.5"

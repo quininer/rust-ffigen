@@ -1,5 +1,3 @@
-#![feature(set_recovery)]
-
 extern crate clang;
 
 #[macro_use] pub mod utils;
