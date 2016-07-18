@@ -124,8 +124,11 @@ pub fn find_clang_include_path() -> PathBuf {
         .unwrap();
 
     clang_path.read_dir().ok()
-        .and_then(|r| r.last())
-        .and_then(|r| r.ok())
+        .and_then(|r|
+            r.filter_map(|d| d.ok())
+                .filter(|d| d.file_type().ok().map_or(false, |x| x.is_dir()))
+                .last()
+        )
         .unwrap()
         .path()
         .join("include")
